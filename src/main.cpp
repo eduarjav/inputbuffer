@@ -76,9 +76,10 @@ namespace {
 
             if (std::fabs(go->getPositionX() - pos.x) > 90.0f) continue;
 
-            auto type = go->m_objectType;
-            bool isHazard = (type == GameObjectType::Hazard || type == GameObjectType::AnimatedHazard);
-            bool isSolid  = (type == GameObjectType::Solid || type == GameObjectType::Slope);
+            int type = static_cast<int>(go->m_objectType);
+            // 0 = Solid, 2 = Hazard, 39 = AnimatedHazard, 23 = Slope
+            bool isHazard = (type == 2 || type == 39);
+            bool isSolid  = (type == 0 || type == 23);
             if (!isHazard && !isSolid) continue;
 
             cocos2d::CCRect objRect = go->getObjectRect();
@@ -108,11 +109,11 @@ namespace {
             if (!go) continue;
             if (std::fabs(go->getPositionX() - p->getPositionX()) > 60.0f) continue;
 
-            auto t = go->m_objectType;
-            if (t == GameObjectType::YellowOrb || t == GameObjectType::PinkOrb ||
-                t == GameObjectType::RedOrb || t == GameObjectType::BlueOrb ||
-                t == GameObjectType::GreenOrb || t == GameObjectType::BlackOrb ||
-                t == GameObjectType::DashOrb || t == GameObjectType::SpiderOrb) {
+            // IDs oficiales de todos los orbes en Geometry Dash (Yellow, Pink, Red, Blue, Green, Black, Dash, Spider, Teleport)
+            int id = go->m_objectID;
+            if (id == 36 || id == 84 || id == 141 || id == 1022 ||
+                id == 1330 || id == 1333 || id == 1704 || id == 1751 ||
+                id == 3004 || id == 3027) {
                 if (pRect.intersectsRect(go->getObjectRect())) return true;
             }
         }
