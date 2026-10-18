@@ -1,5 +1,5 @@
 {
-	"geode": "5.8.2",
+	"geode": "5.11.2",
 	"gd": {
 		"win": "2.2081"
 	},
@@ -7,5 +7,5 @@
 	"id": "dev.inputbuffer",
 	"name": "InputBuffer",
 	"developer": "Dev",
-	"description": "Input buffer mod made by Pedro Sánchez (F6 para cambiar ticks)"
+	"description": "Input buffer mod igual al del video (F6 para cambiar ticks)"
 }
