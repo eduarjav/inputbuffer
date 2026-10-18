@@ -1,7 +1,6 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
-#include <Geode/modify/CCKeyboardDispatcher.hpp>
 #include <cmath>
 #include <cstdio>
 
@@ -25,11 +24,12 @@ namespace {
     BufferedInput g_bufferP2;
     uint64_t g_currentTick = 0;
     bool g_replayingInput = false;
+    bool g_f6WasDown = false;
 
     // F6 etapas:
     // Stage 1 = 2 ticks | Stage 2 = 4 ticks | Stage 3 = 8 ticks
     // Stage 4 = 9 ticks (convierte 1 tick en 10) | Stage 5 = 16 ticks | Stage 6 = OFF
-    int g_stage = 2; // Empieza en 4 ticks por defecto
+    int g_stage = 2;
     const int kStageTicks[] = { 0, 2, 4, 8, 9, 16, 0 };
     const int kLookahead = 22;
 
@@ -71,9 +71,7 @@ namespace {
             return true;
         }
 
-        CCObject* obj = nullptr;
-        CCARRAY_FOREACH(pl->m_objects, obj) {
-            auto* go = typeinfo_cast<GameObject*>(obj);
+        for (GameObject* go : CCArrayExt<GameObject*>(pl->m_objects)) {
             if (!go) continue;
 
             if (std::fabs(go->getPositionX() - pos.x) > 90.0f) continue;
@@ -106,9 +104,7 @@ namespace {
         if (!pl || !pl->m_objects) return false;
         cocos2d::CCRect pRect = p->getObjectRect();
 
-        CCObject* obj = nullptr;
-        CCARRAY_FOREACH(pl->m_objects, obj) {
-            auto* go = typeinfo_cast<GameObject*>(obj);
+        for (GameObject* go : CCArrayExt<GameObject*>(pl->m_objects)) {
             if (!go) continue;
             if (std::fabs(go->getPositionX() - p->getPositionX()) > 60.0f) continue;
 
@@ -193,6 +189,23 @@ class $modify(IBPlayLayer, PlayLayer) {
         PlayLayer::postUpdate(dt);
         ++g_currentTick;
 
+#ifdef GEODE_IS_WINDOWS
+        bool f6Down = (GetAsyncKeyState(VK_F6) & 0x8000) != 0;
+        if (f6Down && !g_f6WasDown) {
+            g_stage = (g_stage % 6) + 1;
+            int t = kStageTicks[g_stage];
+            if (t == 0) {
+                printLog("[InputBuffer] F6 Cycle -> STAGE 6: OFF (100% Raw Input)");
+            } else {
+                printLog(fmt::format(
+                    "[InputBuffer] F6 Cycle -> STAGE {}: {} Ticks All | {} Ticks Wave ({:.2f}f @ 60fps)",
+                    g_stage, t, t, t * 0.25f
+                ));
+            }
+        }
+        g_f6WasDown = f6Down;
+#endif
+
         auto checkBuffer = [&](BufferedInput& buf, PlayerObject* player) {
             if (!buf.active || !player || player->m_isDead) return;
 
@@ -259,23 +272,5 @@ class $modify(IBBaseGameLayer, GJBaseGameLayer) {
         buf.isPlayer1 = isPlayer1;
         buf.pressedTick = g_currentTick;
         buf.maxTicks = maxTicks;
-    }
-};
-
-class $modify(IBKeyDispatcher, cocos2d::CCKeyboardDispatcher) {
-    bool dispatchKeyboardMSG(cocos2d::enumKeyCodes key, bool isKeyDown, bool isKeyRepeat) {
-        if (isKeyDown && !isKeyRepeat && key == cocos2d::enumKeyCodes::KEY_F6) {
-            g_stage = (g_stage % 6) + 1;
-            int t = kStageTicks[g_stage];
-            if (t == 0) {
-                printLog("[InputBuffer] F6 Cycle -> STAGE 6: OFF (100% Raw Input)");
-            } else {
-                printLog(fmt::format(
-                    "[InputBuffer] F6 Cycle -> STAGE {}: {} Ticks All | {} Ticks Wave ({:.2f}f @ 60fps)",
-                    g_stage, t, t, t * 0.25f
-                ));
-            }
-        }
-        return CCKeyboardDispatcher::dispatchKeyboardMSG(key, isKeyDown, isKeyRepeat);
     }
 };
